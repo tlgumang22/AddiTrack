@@ -1,0 +1,14 @@
+# Virtual environment
+myenv/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+# Environment files (optional)
+.env
+# Data (large/raw files, optional – keep only small sample data if needed)
+data/
+*.csv
+*.xlsx
