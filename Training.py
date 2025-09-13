@@ -225,9 +225,9 @@ def simulate_height_series(
 
     length = feedrate * t  # discrete length progression (same units as your table)
     out = pd.DataFrame({
-        "Time": t.astype(int),
-        "Height": h,
-        "Length": length
+        "Time (s)": t.astype(int),
+        "Height (mm)": h,
+        "Length (mm)": length
     })
     return out
 
@@ -279,25 +279,14 @@ def calibrate_noise_from_video(video_path: str) -> Dict[str, float]:
 if __name__ == "__main__":
     model, noise_stats = train_or_load_model_and_noise(EXCEL_PATH)
 
-    # If you want to override noise with video-derived stats:
-    # video_stats = calibrate_noise_from_video(r"C:\path\to\your\video.avi")
-    # noise_stats.update(video_stats)
-    # with open(NOISE_PATH, "w") as f:
-    #     json.dump(noise_stats, f)
-
     # Example request: discrete table for first T seconds
-    V, I, F, TMAX = 8, 17.3, 43, 10  # TMAX=10 means rows for t=1..10
+    V, I, F, TMAX = 7, 14.5, 48, 100
     table = simulate_height_series(
         model, V, I, F, TMAX, noise_stats, seed=RANDOM_STATE,
         enforce_nonnegative=True, monotonic_soft=True
     )
     print("\nSimulated discrete Time vs Height table:")
     print(table.to_string(index=False))
-
-    # Save for reuse in reports/apps
-    # out_csv = f"simulated_series_V{V}_I{I}_F{F}_T{TMAX}.csv"
-    # table.to_csv(out_csv, index=False)
-    # print(f"\nSaved: {out_csv}")
 
     out_excel = f"simulated_series_V{V}_I{I}_F{F}_T{TMAX}.xlsx"
     table.to_excel(out_excel, index=False, engine="openpyxl")

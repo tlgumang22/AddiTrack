@@ -4,7 +4,6 @@ import pandas as pd
 import os
 
 def extract_line_length(image_path):
-    """Extracts the annotated line length (in pixels) from the image."""
     img = cv2.imread(image_path)
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -46,7 +45,6 @@ def extract_line_length(image_path):
 
 
 def process_folder(folder_path, first_height_real, voltage, current, feedrate):
-    """Process one folder of images and return results as a DataFrame."""
     image_files = sorted([f for f in os.listdir(folder_path) if f.endswith(('.jpg','.png','.jpeg'))])
 
     if not image_files:
@@ -82,12 +80,6 @@ def process_folder(folder_path, first_height_real, voltage, current, feedrate):
 
 
 def process_multiple_folders(folder_info_list, output_excel):
-    """
-    folder_info_list = [
-        (folder_path, first_height_real, voltage, current, feedrate),
-        ...
-    ]
-    """
     all_data = []
     for folder_path, first_height_real, voltage, current, feedrate in folder_info_list:
         df = process_folder(folder_path, first_height_real, voltage, current, feedrate)
@@ -104,10 +96,15 @@ def process_multiple_folders(folder_info_list, output_excel):
 
 # ================== Example usage ==================
 folders_to_process = [
-    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\2", 1.7, 6, 14.5, 47),
-    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\3", 1.8, 9, 16.5, 44),
-    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\4", 2.1, 7, 15, 50),
-    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\5", 1.9, 8, 13.5, 55),
+    # first real height , voltage , current , feed rate
+    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\2", 1.9, 6, 14.5, 47),
+    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\3", 1.8, 9, 14.5, 53),
+    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\4", 1.8, 7, 14, 47),
+    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\5", 1.9, 8, 14, 50),
+    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\6", 1.8, 8, 14, 53),
+    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\7", 1.9, 8, 15, 47),
+    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\8", 1.8, 8, 15, 50),
+    (r"C:\\Users\\dosiu\\OneDrive\\Desktop\\nk jain sir project\\Annotate Frames\\9", 1.9, 8, 15, 53),
 ]
 
 process_multiple_folders(folders_to_process, "all_folders_results.xlsx")
