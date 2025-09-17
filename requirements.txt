@@ -1,0 +1,12 @@
+numpy
+opencv-python
+openpyxl
+pandas
+tensorflow
+keras
+pyvista
+scikit-learn
+joblib
+scipy
+matplotlib
+torch
