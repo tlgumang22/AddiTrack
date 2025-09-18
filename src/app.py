@@ -11,6 +11,8 @@ from Training import (
     train_or_load_model_and_noise,
     simulate_height_series,
 )
+from ConstantHeight import train_or_load_model, predict_constant_height
+from AvgHeight import compute_avgheight
 
 # ======================
 # Helper Functions
@@ -70,8 +72,8 @@ st.markdown("---")
 # ======================
 # Tabs for Main Sections
 # ======================
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 Simulation", "🔄 Training", "📖 Read About Project", "👨‍💻 About Developer"
+tab1, tab2, tab3, tab4,tab5, tab6 = st.tabs([
+    "📊 Simulation", "🔄 Training", "📐 Average Height Profile", "📏 Constant Height Control", "📖 Read About Project", "👨‍💻 About Developer"
 ])
 
 # ----------------------
@@ -145,34 +147,145 @@ with tab2:
             st.success("✅ Model retrained successfully!")
 
 # ----------------------
-# About Project Tab
+# AvgHeight Tab
 # ----------------------
 with tab3:
-    col1, col2 = st.columns([3,1])
+    st.header("📐 Average Height Profile")
+
+    # Unique Animation
+    col1, col2 = st.columns([2,1])
+    with col1:
+        st.write("This section computes **average height** from a simulated series and adjusts V–I values.")
+    with col2:    
+        lottie_avg = load_lottie("https://assets9.lottiefiles.com/packages/lf20_x62chJ.json")
+        if lottie_avg:
+            st_lottie(lottie_avg, height=180, key="avg-anim")
+
+    if st.button("Generate Average Height Profile"):
+        try:
+            # Use the same file that was generated in Simulation tab
+            sim_file = f"C:\\Users\\dosiu\\OneDrive\\Desktop\\python_vscode\\BTP\\data\\simulated_series_V{V}_I{I}_F{F}_T{T}.xlsx"
+            df_avg, avg_h = compute_avgheight(sim_file)
+            st.success("✅ Average height profile generated successfully!")
+
+            st.write(f"**Average Height:** {avg_h:.3f} mm")
+            st.dataframe(df_avg)
+
+            # Download link
+            with open("data/constant_height_profile.xlsx", "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+                href = f'<a href="data:application/octet-stream;base64,{b64}" download="constant_height_profile.xlsx">📥 Download Excel</a>'
+                st.markdown(href, unsafe_allow_html=True)
+
+        except Exception as e:
+            st.error(f"Failed to run AvgHeight: {e}")
+
+# ----------------------
+# ConstantHeight Tab
+# ----------------------
+with tab4:
+    st.header("📏 Constant Height Control")
+
+    col1, col2 = st.columns([2,1])
+    with col1:
+        st.write("This section allows training the inverse model and predicting V–I for a **desired constant height**.")
+    with col2:    
+        lottie_const = load_lottie("https://assets9.lottiefiles.com/packages/lf20_x62chJ.json")
+        if lottie_const:
+            st_lottie(lottie_const, height=180, key="const-anim")
+
+    if "const_model" not in st.session_state:
+        st.session_state.const_model = None
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("Train / Load Constant Height Model"):
+            try:
+                st.session_state.const_model = train_or_load_model()
+                st.success("✅ Model trained/loaded successfully!")
+            except Exception as e:
+                st.error(f"Training failed: {e}")
+
+    with col2:
+        desired_h = st.number_input("Enter Desired Height (mm)", min_value=0.0, value=5.0, step=0.1)
+        if st.button("Generate Constant Height Profile"):
+            if st.session_state.const_model is None:
+                st.warning("⚠️ Please train/load the model first.")
+            else:
+                try:
+                    df_const = predict_constant_height(st.session_state.const_model, desired_h)
+                    st.dataframe(df_const)
+
+                    # Download link
+                    const_file = r"data\predicted_iv.xlsx"
+                    if os.path.exists(const_file):
+                        with open(const_file, "rb") as f:
+                            b64 = base64.b64encode(f.read()).decode()
+                            href = f'<a href="data:application/octet-stream;base64,{b64}" download="predicted_iv.xlsx">📥 Download Excel</a>'
+                            st.markdown(href, unsafe_allow_html=True)
+
+                    st.success(f"✅ Predictions generated for constant height {desired_h} mm")
+                except Exception as e:
+                    st.error(f"Prediction failed: {e}")
+
+
+# ----------------------
+# About Project Tab
+# ----------------------
+with tab5:
+    col1, col2 = st.columns([2,1])
     with col1:
         st.header("📖 Read About Project")
         st.write("""
-        This project focuses on **Additive Manufacturing (AM)**, also known as **3D Printing**.  
-        It integrates **Machine Learning** with **MATLAB-based 3D simulation** to:
-        - Predict deposition **height profiles** from process parameters (Voltage, Current, Feedrate, Time).
-        - Generate **synthetic datasets** for process planning.
-        - Visualize deposition in **3D animations** for better understanding.
-        
-        The ML model is trained on experimental data to capture process behavior,  
-        and then extended with noise modeling for realistic simulation.
+        ### 🔹 Overview  
+        This project is built around **Additive Manufacturing (AM)**, often called **3D Printing**.  
+        It focuses on simulating the **layer-by-layer deposition process** with the help of **AI models** and **MATLAB-based visualization**.
+
+        ---
+
         """)
+
     with col2:
         lottie_project = load_lottie("https://assets1.lottiefiles.com/packages/lf20_w51pcehl.json")
         if lottie_project:
             st_lottie(lottie_project, height=180, key="proj-anim")
 
-    # New Animation (Research/Project Animation)
+    st.write("""
+    ### 🔹 What It Does  
+    - 🧩 **Process Simulation** → Predicts **layer height growth** using input parameters (Voltage, Current, Feedrate, Time).  
+    - 📊 **Synthetic Dataset Generation** → Creates data for training and testing when experiments are limited.  
+    - 🤖 **Machine Learning Models** → Trains models to capture the true deposition behavior, including variability and noise.  
+    - ⚡ **Dynamic Control Features**:  
+    - **Average Height Mode** → Keeps track of mean height and adjusts process parameters accordingly.  
+    - **Constant Height Mode** → Uses an inverse model (Neural Network) to maintain a desired fixed height profile.  
+    - 🎥 **3D MATLAB Animations** → Visualizes the deposition process in a more intuitive, interactive way.  
+
+    ---
+
+    ### 🔹 Why It’s Useful  
+    - Helps engineers and researchers **understand process–parameter interactions**.  
+    - Acts as a **Digital Twin** for deposition → enabling better monitoring, planning, and optimization.  
+    - Reduces the dependency on expensive and time-consuming experimental trials.  
+
+    ---
+
+    ### 🔹 Key Technologies  
+    - **Python + Streamlit** → Interactive Web UI  
+    - **Scikit-learn & PyTorch** → Machine Learning & Neural Networks  
+    - **MATLAB** → 3D visualization and simulation of deposition  
+    - **Pandas & Excel Integration** → Data handling and export  
+
+    ---
+
+    ✨ In short, this project blends **Artificial Intelligence**, **Data Science**, and **Manufacturing Technology** to provide a smart, easy-to-use tool for simulating and controlling additive manufacturing processes.
+    """)
 
 
 # ----------------------
 # About Developer Tab
 # ----------------------
-with tab4:
+with tab6:
     st.header("👨‍💻 About Developer")
 
     col1, col2 = st.columns([1,3])
@@ -207,3 +320,4 @@ with tab4:
         This project combines my interest in **AI + Manufacturing**,  
         showcasing how intelligent models can assist in real-world process optimization.
         """)
+
