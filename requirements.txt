@@ -10,3 +10,5 @@ joblib
 scipy
 matplotlib
 torch
+streamlit
+streamlit-lottie

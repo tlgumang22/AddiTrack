@@ -17,7 +17,7 @@ if not match:
 
 base_voltage = float(match.group(1))
 base_current = float(match.group(2))
-feedrate = float(match.group(3))
+feedrate = float(match.group(3))   # parsed but not used anymore
 total_time = int(match.group(4))
 
 print(f"Base values from filename → V={base_voltage}, I={base_current}, F={feedrate}, T={total_time}")
@@ -36,10 +36,8 @@ k_i = 0.03
 
 for h in df["Height (mm)"]:
     error = avg_height - h
-
     v_new = base_voltage + k_v * error
     i_new = base_current + k_i * error
-
     new_voltage.append(v_new)
     new_current.append(i_new)
 
@@ -49,7 +47,7 @@ df_new = pd.DataFrame({
     "Height (mm)": df["Height (mm)"],
     "Voltage (V)": new_voltage,
     "Current (A)": new_current,
-    "Feedrate (mm/s)": [feedrate] * len(df)
+    "Average Height (mm)": [avg_height] * len(df)
 })
 
 out_file = r"data\constant_height_profile.xlsx"
