@@ -139,7 +139,7 @@ def train_or_load_model_and_noise(excel_path=EXCEL_PATH):
         model = joblib.load(MODEL_PATH)
     else:
         model = RandomForestRegressor(
-            n_estimators=400, random_state=RANDOM_STATE, n_jobs=-1
+            n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1
         )
         model.fit(X_train, y_train)
         joblib.dump(model, MODEL_PATH)
@@ -147,7 +147,7 @@ def train_or_load_model_and_noise(excel_path=EXCEL_PATH):
     if X_test is not None:
         y_pred = model.predict(X_test)
         r2 = r2_score(y_test, y_pred, multioutput="uniform_average")
-        print(f"Parameter model R² (a,b,c): {r2:.3f}")
+        # print(f"Parameter model R² (a,b,c): {r2:.3f}")
     else:
         print("Parameter model trained on full data (not enough groups to hold out a test set).")
 
@@ -216,41 +216,6 @@ def simulate_height_series(
     })
     return out
 
-def calibrate_noise_from_video(video_path: str) -> Dict[str, float]:
-    """
-    Rough estimator: measures frame intensity fluctuations to infer temporal correlation.
-    Use when you don't have enough table data to learn residual stats.
-    """
-    if not OPENCV_AVAILABLE:
-        raise RuntimeError("OpenCV not available. Install opencv-python to use video calibration.")
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        raise FileNotFoundError(f"Cannot open video: {video_path}")
-
-    series = []
-    ok, frame = cap.read()
-    count = 0
-    while ok:
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        series.append(float(gray.mean()))
-        ok, frame = cap.read()
-        count += 1
-    cap.release()
-
-    s = np.asarray(series, dtype=float)
-    if s.size < 3:
-        return {"sigma": 0.05, "rho": 0.3}
-
-    s = s - np.mean(s)
-    s0 = s[:-1]; s1 = s[1:]
-    denom = (np.sqrt(np.sum(s0**2)) * np.sqrt(np.sum(s1**2)))
-    rho = float(np.sum(s0 * s1) / denom) if denom > 0 else 0.3
-    rho = max(min(rho, 0.95), -0.95)
-
-    sigma = float(np.std(s) * 0.01)
-    sigma = sigma if sigma > 1e-6 else 0.05
-    return {"sigma": sigma, "rho": rho}
-
 # ---------------------------
 # 6) Main (example usage)
 # ---------------------------
@@ -265,6 +230,6 @@ if __name__ == "__main__":
     print("\nSimulated discrete Time vs Height table:")
     print(table.to_string(index=False))
 
-    out_excel = f"BTP\\data\\simulated_series_V{V}_I{I}_F{F}_T{TMAX}.xlsx"
+    out_excel = f"C:\\Users\\dosiu\OneDrive\\Desktop\\python_vscode\\BTP\\data\\simulated_series_V{V}_I{I}_F{F}_T{TMAX}.xlsx"
     table.to_excel(out_excel, index=False, engine="openpyxl")
     print(f"\nSaved: {out_excel}")
