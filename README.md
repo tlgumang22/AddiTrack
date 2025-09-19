@@ -52,16 +52,20 @@ BTP/
 ├── src/                       # Source code
 │   ├── app.py                 # Streamlit app (main entry point)
 │   ├── Training.py            # Model training & simulation
+│   ├── Training2.py            # Model training & simulation II (poly2 - poly6)
 │   ├── VideoToFrame.py        # Extract frames from deposition videos
 │   ├── TimeVsHeight.py        # Frame → height dataset builder
 │   ├── Graph.py               # Plotting utilities
-│   ├── ContantHeight.py       # (To be renamed → ConstantHeight.py)
-│   ├── temp.py       # (To be renamed → ConstantHeight.py)
+│   ├── ConstantHeight.py       # 
+│   ├── ConstantHeight2.py       # 
 │
 ├── data/                      # Raw & processed datasets
 │   ├── all_folders_results.xlsx
 │   ├── simulated_series_*.xlsx
 │   ├── constant_height_profile.xlsx
+│   ├── curve_fit_summary.xlsx
+│   ├── predicted_iv.xlsx
+│   ├── simulated_series_V_I_F_T.xlsx
 │
 ├── models/                    # Saved models & noise stats
 │   ├── curve_param_model.pkl
@@ -72,3 +76,4 @@ BTP/
 │
 ├── matlab/                    # MATLAB scripts
     ├── depositionAnimation.m
+    ├── depositionAnimation2.m

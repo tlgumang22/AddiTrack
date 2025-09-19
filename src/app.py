@@ -6,6 +6,7 @@ import base64
 from streamlit_lottie import st_lottie
 import requests
 import os
+import numpy as np
 
 from Training import (
     train_or_load_model_and_noise,
@@ -13,6 +14,7 @@ from Training import (
 )
 from ConstantHeight import train_or_load_model, predict_constant_height
 from AvgHeight import compute_avgheight
+from Training2 import generate_poly_simulation, process_groups, train_all_models, simulate_from_params
 
 # ======================
 # Helper Functions
@@ -72,14 +74,132 @@ st.markdown("---")
 # ======================
 # Tabs for Main Sections
 # ======================
-tab1, tab2, tab3, tab4,tab5, tab6 = st.tabs([
-    "📊 Simulation", "🔄 Training", "📐 Average Height Profile", "📏 Constant Height Control", "📖 Read About Project", "👨‍💻 About Developer"
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "🤖 Poly Model", 
+    "📊 Simulation", "🔄 Training", 
+    "📐 Average Height Profile", "📏 Constant Height Control", 
+    "📖 Read About Project", "👨‍💻 About Developer"
 ])
 
 # ----------------------
-# Simulation Tab
+# Tab1 → Curve Fit Summary (Training2)
+# ----------------------
+# ----------------------
+# Tab1 → Curve Fit + Train + Simulate
 # ----------------------
 with tab1:
+    st.header("🤖 Curve Fit + Train + Simulate (Training2)")
+
+    # Upload dataset for curve fitting + training
+    uploaded_file = st.file_uploader("Upload Excel dataset for Training & Curve Fitting", type=["xlsx"], key="combined_upload")
+    if uploaded_file:
+        file_path = os.path.join("data", uploaded_file.name)
+        os.makedirs("data", exist_ok=True)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        # Curve fitting summary
+        summary_df = process_groups(file_path)
+        summary_path = "data/curve_fit_summary.xlsx"
+        summary_df.to_excel(summary_path, index=False)
+        st.success("✅ Curve fitting complete!")
+        display_df = summary_df.copy()
+        display_df["Params"] = display_df["Params"].apply(lambda x: str(x))
+        st.dataframe(display_df.head(10))
+
+        with open(summary_path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+            href = f'<a href="data:application/octet-stream;base64,{b64}" download="curve_fit_summary.xlsx">📥 Download Curve Fit Summary</a>'
+            st.markdown(href, unsafe_allow_html=True)
+
+        # Train models
+        models = train_all_models(summary_df)
+        st.success("✅ Models trained successfully!")
+
+        # Inputs for simulation
+        col1, col2 = st.columns(2)
+        with col1:
+            V = st.number_input("⚡ Voltage (V)", min_value=0.0, value=8.0, step=0.1, key="poly_v")
+            I = st.number_input("🔌 Current (A)", min_value=0.0, value=15.0, step=0.1, key="poly_i")
+        with col2:
+            F = st.number_input("🚀 Feedrate (mm/min)", min_value=0.0, value=50.0, step=1.0, key="poly_f")
+            T = st.number_input("⏱ Time (s)", min_value=1, value=100, step=1, key="poly_t")
+
+        if st.button("▶️ Run Simulation"):
+            example_input = np.array([[V, I, F]])
+            times = np.arange(0, T+1, 1)
+
+            sim_data = {"Time (s)": times}
+            all_heights = []
+
+            for model_type, (rf, _) in models.items():
+                pred_params = rf.predict(example_input)[0]
+                params_tuple = (pred_params, times.max())
+                heights = simulate_from_params(params_tuple, times)
+                sim_data[f"Height_{model_type}"] = heights
+                all_heights.append(heights)
+
+            if all_heights:
+                sim_data["Height (mm)"] = np.mean(all_heights, axis=0)
+
+            sim_data["Length (mm)"] = (F / 60.0) * times
+            sim_df = pd.DataFrame(sim_data)
+            sim_path = "data/simulated_series.xlsx"
+            sim_df.to_excel(sim_path, index=False)
+
+            st.subheader("📈 Simulation Results")
+            st.dataframe(sim_df.head(10))
+            st.line_chart(sim_df.set_index("Time (s)")["Height (mm)"])
+
+            with open(sim_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+                href = f'<a href="data:application/octet-stream;base64,{b64}" download="simulated_series.xlsx">📥 Download Simulated Series</a>'
+                st.markdown(href, unsafe_allow_html=True)
+
+
+# ----------------------
+# Tab2 → Original Simulation (two inputs per line)
+# ----------------------
+# with tab2:
+#     st.header("📊 Generate Simulation Data")
+
+#     lottie_process = load_lottie("https://assets2.lottiefiles.com/packages/lf20_cg3c4z.json")
+#     if lottie_process:
+#         st_lottie(lottie_process, height=180, key="sim-process")
+
+#     col1, col2 = st.columns(2)
+#     with col1:
+#         V = st.number_input("⚡ Voltage (V)", min_value=0.0, value=7.0, step=0.1, key="sim_v")
+#         I = st.number_input("🔌 Current (A)", min_value=0.0, value=14.5, step=0.1, key="sim_i")
+#     with col2:
+#         F = st.number_input("🚀 Feedrate (mm/min)", min_value=0.0, value=48.0, step=1.0, key="sim_f")
+#         T = st.number_input("⏱ Time (s)", min_value=1, value=100, step=1, key="sim_t")
+
+#     if st.button("Generate Output"):
+#         table = simulate_height_series(
+#             model, V, I, F, T, noise_stats, seed=42,
+#             enforce_nonnegative=True, monotonic_soft=True
+#         )
+#         st.success("✅ Simulation complete!")
+#         st.dataframe(table.head(10))
+
+#         out_file = f"data/simulated_series_V{V}_I{I}_F{F}_T{T}.xlsx"
+#         table.to_excel(out_file, index=False, engine="openpyxl")
+
+#         with open(out_file, "rb") as f:
+#             b64 = base64.b64encode(f.read()).decode()
+#             href = f'<a href="data:application/octet-stream;base64,{b64}" download="simulated_series.xlsx">📥 Download Excel File</a>'
+#             st.markdown(href, unsafe_allow_html=True)
+
+#     if st.button("Run MATLAB Simulation"):
+#         try:
+#             matlab_script = r"scripts/depositionAnimation.m"
+#             subprocess.run(["matlab", "-batch", f"run('{matlab_script}')"], check=True)
+#         except Exception as e:
+#             st.error(f"MATLAB run failed: {e}")
+
+
+with tab2:
     st.header("📊 Generate Simulation Data")
 
     # New Animation (Process Animation)
@@ -126,7 +246,7 @@ with tab1:
 # ----------------------
 # Training Tab
 # ----------------------
-with tab2:
+with tab3:
     col1, col2 = st.columns([2,1])
     with col1:
         st.header("🔄 Retrain Model with New Dataset")
@@ -149,7 +269,7 @@ with tab2:
 # ----------------------
 # AvgHeight Tab
 # ----------------------
-with tab3:
+with tab4:
     st.header("📐 Average Height Profile")
 
     # Unique Animation
@@ -183,7 +303,7 @@ with tab3:
 # ----------------------
 # ConstantHeight Tab
 # ----------------------
-with tab4:
+with tab5:
     st.header("📏 Constant Height Control")
 
     col1, col2 = st.columns([2,1])
@@ -233,7 +353,7 @@ with tab4:
 # ----------------------
 # About Project Tab
 # ----------------------
-with tab5:
+with tab6:
     col1, col2 = st.columns([2,1])
     with col1:
         st.header("📖 Read About Project")
@@ -285,7 +405,7 @@ with tab5:
 # ----------------------
 # About Developer Tab
 # ----------------------
-with tab6:
+with tab7:
     st.header("👨‍💻 About Developer")
 
     col1, col2 = st.columns([1,3])
