@@ -59,7 +59,9 @@ def process_groups(file_path):
                 "Params": params_poly
             })
 
-    return pd.DataFrame(results)
+    df = pd.DataFrame(results)
+    df["R2"] = df["R2"].map(lambda x: f"{x:.4f}")
+    return df
 
 
 # =========================
